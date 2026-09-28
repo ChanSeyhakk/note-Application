@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+/* Enable Tailwind dark mode using the .dark class */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Smooth theme transition */
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
