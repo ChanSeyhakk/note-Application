@@ -39,9 +39,9 @@
         <!-- Logo -->
         <div class="flex justify-center">
           <div
-            class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white shadow-lg shadow-blue-500/25 sm:h-16 sm:w-16 sm:text-2xl"
+            class="register-logo flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-blue-500/25 sm:h-16 sm:w-16"
           >
-            N
+            <img :src="logoUrl" alt="" />
           </div>
         </div>
 
@@ -249,6 +249,7 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
 
+const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
 const router = useRouter();
 
 const username = ref("");
@@ -349,3 +350,12 @@ onMounted(() => {
   loadTheme();
 });
 </script>
+
+<style scoped>
+.register-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.2);
+}
+</style>

@@ -21,9 +21,9 @@
           class="flex items-center gap-3"
         >
           <div
-            class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-500/20"
+            class="details-logo flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-blue-500/20"
           >
-            N
+            <img :src="logoUrl" alt="" />
           </div>
 
           <div class="text-left">
@@ -292,6 +292,8 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../services/api";
 
+const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
+
 interface Note {
   id: number;
   title: string;
@@ -446,3 +448,12 @@ onMounted(() => {
   loadNote();
 });
 </script>
+
+<style scoped>
+.details-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.2);
+}
+</style>

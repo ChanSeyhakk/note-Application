@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
 
+const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
+
 interface Note {
   id: number;
   title: string;
@@ -162,7 +164,7 @@ onMounted(() => {
   <div class="dashboard" :class="{ 'dashboard--dark': isDark }">
     <aside class="sidebar">
       <a class="brand" href="#/notes" aria-label="NoteMe home">
-        <span class="brand__mark">N</span>
+        <span class="brand__mark"><img :src="logoUrl" alt="" /></span>
         <span class="brand__copy">
           <strong>NoteMe</strong>
           <small>Your personal notes</small>
@@ -422,18 +424,16 @@ onMounted(() => {
 }
 
 .brand__mark {
-  display: grid;
+  display: block;
   width: 39px;
   height: 39px;
-  place-items: center;
+  overflow: hidden;
   border-radius: 12px;
-  background: #2864e8;
-  color: white;
-  font-size: 20px;
-  font-weight: 750;
+  background: #fff;
   box-shadow: 0 6px 18px #0c4acb55;
 }
 
+.brand__mark img { display: block; width: 100%; height: 100%; object-fit: cover; transform: scale(1.2); }
 .brand__copy { display: grid; gap: 2px; }
 .brand__copy strong { color: #fff; font-size: 16px; letter-spacing: -.3px; }
 .brand__copy small { color: #91a2bd; font-size: 11px; }
