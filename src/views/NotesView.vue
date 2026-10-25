@@ -2,6 +2,12 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
+import {
+  getCategoryTone,
+  NOTE_CATEGORIES,
+  readSavedNoteCategories,
+  saveNoteCategory,
+} from "../utils/noteCategories";
 
 const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
 
@@ -9,6 +15,7 @@ interface Note {
   id: number;
   title: string;
   content: string | null;
+  category?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,6 +29,7 @@ const errorMessage = ref("");
 const searchQuery = ref("");
 const sortOption = ref("newest");
 const activeFilter = ref<NoteFilter>("all");
+const activeCategory = ref("");
 const isDark = ref(false);
 const favoriteIds = ref<number[]>([]);
 const userName = ref("there");
@@ -42,6 +50,12 @@ const filteredNotes = computed(() => {
     result = result.filter((note) => new Date(note.createdAt) >= weekAgo);
   } else if (activeFilter.value === "favorites") {
     result = result.filter((note) => favoriteIds.value.includes(note.id));
+  }
+
+  if (activeCategory.value === "__uncategorized__") {
+    result = result.filter((note) => !note.category);
+  } else if (activeCategory.value) {
+    result = result.filter((note) => note.category === activeCategory.value);
   }
 
   if (search) {
@@ -75,7 +89,12 @@ const loadNotes = async () => {
 
   try {
     const response = await api.get<Note[]>("/Notes");
-    notes.value = response.data;
+    const savedCategories = readSavedNoteCategories();
+    notes.value = response.data.map((note) => ({
+      ...note,
+      category:
+        note.category || savedCategories[String(note.id)] || null,
+    }));
   } catch (error: any) {
     console.error(error);
     errorMessage.value =
@@ -132,6 +151,7 @@ const deleteNote = async (id: number) => {
 
   try {
     await api.delete(`/Notes/${id}`);
+    saveNoteCategory(id, "");
     notes.value = notes.value.filter((note) => note.id !== id);
     favoriteIds.value = favoriteIds.value.filter((favoriteId) => favoriteId !== id);
     localStorage.setItem("favoriteNotes", JSON.stringify(favoriteIds.value));
@@ -304,14 +324,26 @@ onMounted(() => {
               <button :class="{ 'filter-tabs__item--active': activeFilter === 'recent' }" @click="activeFilter = 'recent'">This week</button>
               <button :class="{ 'filter-tabs__item--active': activeFilter === 'favorites' }" @click="activeFilter = 'favorites'">Favorites</button>
             </div>
-            <label class="sort-control">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" /></svg>
-              <select v-model="sortOption" aria-label="Sort notes">
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="title">Title A–Z</option>
-              </select>
-            </label>
+            <div class="toolbar__controls">
+              <label class="category-filter">
+                <span>Category</span>
+                <select v-model="activeCategory" aria-label="Filter by category">
+                  <option value="">All categories</option>
+                  <option v-for="item in NOTE_CATEGORIES" :key="item" :value="item">
+                    {{ item }}
+                  </option>
+                  <option value="__uncategorized__">Uncategorized</option>
+                </select>
+              </label>
+              <label class="sort-control">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" /></svg>
+                <select v-model="sortOption" aria-label="Sort notes">
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="title">Title A–Z</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <div v-if="loading" class="notes-grid">
@@ -348,6 +380,11 @@ onMounted(() => {
                 </button>
               </div>
               <div class="note-card__body">
+                <span
+                  v-if="note.category"
+                  class="category-badge"
+                  :class="`category-badge--${getCategoryTone(note.category)}`"
+                >{{ note.category }}</span>
                 <button class="note-card__title" @click="viewNote(note.id)">{{ note.title }}</button>
                 <p>{{ note.content || "No content added yet." }}</p>
                 <div class="note-card__footer">
@@ -556,6 +593,7 @@ onMounted(() => {
 .primary-button:hover { background: #1e56d2; transform: translateY(-1px); }
 .primary-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 20px 0 14px; }
+.toolbar__controls { display: flex; align-items: center; gap: 8px; }
 .filter-tabs { display: flex; align-items: center; gap: 5px; }
 .filter-tabs button { padding: 7px 12px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: 10px; font-weight: 600; }
 .filter-tabs button:hover { background: var(--surface-soft); color: var(--ink); }
@@ -564,6 +602,8 @@ onMounted(() => {
 .sort-control { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--muted); }
 .sort-control svg { width: 14px; height: 14px; }
 .sort-control select { max-width: 115px; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 10px; cursor: pointer; }
+.category-filter { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--muted); font-size: 10px; }
+.category-filter select { max-width: 130px; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
 
 .notes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
 .note-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); box-shadow: 0 4px 14px #25395808; transition: transform .2s ease, box-shadow .2s ease; }
@@ -584,6 +624,13 @@ onMounted(() => {
 .favorite-button svg { width: 14px; height: 14px; fill: transparent; stroke: currentColor; stroke-width: 1.8; }
 .favorite-button--active svg { fill: currentColor; }
 .note-card__body { padding: 13px 14px 11px; }
+.category-badge, .note-category { display: inline-flex; align-items: center; width: fit-content; padding: 4px 8px; border-radius: 999px; font-size: 9px; font-weight: 700; line-height: 1.2; }
+.category-badge { margin-bottom: 8px; }
+.category-badge--blue { background: #e8efff; color: #2864e8; }
+.category-badge--green { background: #e3f8ef; color: #168b5c; }
+.category-badge--rose { background: #fff0f0; color: #d44f5a; }
+.category-badge--purple { background: #f1eaff; color: #8348d6; }
+.category-badge--amber { background: #fff5dc; color: #a66a08; }
 .note-card__title { display: block; width: 100%; overflow: hidden; padding: 0; border: 0; background: transparent; color: var(--ink); cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .note-card__title:hover { color: var(--blue); }
 .note-card__body > p { display: -webkit-box; min-height: 38px; overflow: hidden; margin: 7px 0 12px; color: var(--muted); font-size: 10px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -613,6 +660,10 @@ onMounted(() => {
 }
 
 @media (max-width: 800px) {
+  .toolbar { align-items: flex-start; flex-direction: column; }
+  .toolbar__controls { width: 100%; justify-content: space-between; }
+  .category-filter { flex: 1; }
+  .category-filter select { min-width: 0; }
   .sidebar { flex-basis: 67px; align-items: center; padding: 18px 9px 13px; }
   .brand { margin: 0 0 32px; }
   .brand__copy, .sidebar__label, .side-nav__item span, .sidebar-tip, .sidebar__username, .sidebar__logout { display: none; }

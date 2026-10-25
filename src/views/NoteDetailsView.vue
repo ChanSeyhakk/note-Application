@@ -3,6 +3,11 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../services/api";
 import { renderMarkdown } from "../utils/markdown";
+import {
+  getCategoryTone,
+  readSavedNoteCategories,
+  saveNoteCategory,
+} from "../utils/noteCategories";
 
 const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
 
@@ -10,6 +15,7 @@ interface Note {
   id: number;
   title: string;
   content: string | null;
+  category?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,7 +60,13 @@ const loadNote = async () => {
     }
 
     const response = await api.get<Note>(`/Notes/${id}`);
-    note.value = response.data;
+    note.value = {
+      ...response.data,
+      category:
+        response.data.category ||
+        readSavedNoteCategories()[String(response.data.id)] ||
+        null,
+    };
   } catch (error: any) {
     console.error(error);
     errorMessage.value =
@@ -81,6 +93,7 @@ const deleteNote = async () => {
 
   try {
     await api.delete(`/Notes/${note.value.id}`);
+    saveNoteCategory(note.value.id, "");
     router.push("/notes");
   } catch (error: any) {
     console.error(error);
@@ -222,6 +235,11 @@ onMounted(() => {
             </div>
             <div class="note-heading__copy">
               <span class="eyebrow">YOUR NOTE</span>
+              <span
+                v-if="note.category"
+                class="note-category"
+                :class="`category-badge--${getCategoryTone(note.category)}`"
+              >{{ note.category }}</span>
               <h1>{{ note.title }}</h1>
               <p>Created {{ formatDate(note.createdAt) }}</p>
             </div>
@@ -344,6 +362,12 @@ onMounted(() => {
 .heading-icon svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .note-heading__copy { min-width: 0; }
 .eyebrow { color: #8392aa; font-size: 8px; font-weight: 750; letter-spacing: 1px; }
+.note-category { display: inline-flex; align-items: center; width: fit-content; margin-top: 5px; padding: 4px 8px; border-radius: 999px; font-size: 9px; font-weight: 700; line-height: 1.2; }
+.category-badge--blue { background: #e8efff; color: #2864e8; }
+.category-badge--green { background: #e3f8ef; color: #168b5c; }
+.category-badge--rose { background: #fff0f0; color: #d44f5a; }
+.category-badge--purple { background: #f1eaff; color: #8348d6; }
+.category-badge--amber { background: #fff5dc; color: #a66a08; }
 .note-heading h1 { overflow-wrap: anywhere; margin: 3px 0 5px; color: var(--ink); font-size: clamp(21px, 2.5vw, 29px); font-weight: 760; letter-spacing: -.8px; line-height: 1.2; }
 .note-heading p { margin: 0; color: var(--muted); font-size: 10px; }
 .note-card { overflow: hidden; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); box-shadow: 0 5px 20px #2539580b; }

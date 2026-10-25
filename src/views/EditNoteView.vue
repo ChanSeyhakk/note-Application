@@ -4,6 +4,11 @@ import { useRoute, useRouter } from "vue-router";
 import MarkdownEditor from "../components/MarkdownEditor.vue";
 import api from "../services/api";
 import { renderMarkdown } from "../utils/markdown";
+import {
+  NOTE_CATEGORIES,
+  readSavedNoteCategories,
+  saveNoteCategory,
+} from "../utils/noteCategories";
 
 const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
 
@@ -11,6 +16,7 @@ interface Note {
   id: number;
   title: string;
   content: string | null;
+  category?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -20,6 +26,8 @@ const router = useRouter();
 
 const title = ref("");
 const content = ref("");
+const contentCharacterCount = ref(0);
+const category = ref("");
 const note = ref<Note | null>(null);
 const loadingNote = ref(true);
 const saving = ref(false);
@@ -80,6 +88,10 @@ const loadNote = async () => {
     note.value = response.data;
     title.value = response.data.title ?? "";
     content.value = response.data.content ?? "";
+    category.value =
+      response.data.category ||
+      readSavedNoteCategories()[String(response.data.id)] ||
+      "";
   } catch (error: any) {
     console.error(error);
     loadError.value =
@@ -110,7 +122,15 @@ const updateNote = async () => {
     await api.put(`/Notes/${id}`, {
       title: title.value.trim(),
       content: content.value.trim() || null,
+      category: category.value || null,
     });
+
+    const categorySaved = saveNoteCategory(id, category.value);
+    if (!categorySaved && category.value) {
+      errorMessage.value =
+        "Your note was updated, but its category could not be saved in this browser.";
+      return;
+    }
 
     successMessage.value = "Note updated successfully.";
     setTimeout(() => {
@@ -273,6 +293,19 @@ onMounted(() => {
               </div>
               <div class="character-count">{{ title.length }} / 200</div>
 
+              <div class="category-field">
+                <div class="field-heading">
+                  <label for="category">Category</label>
+                  <span>Optional</span>
+                </div>
+                <select id="category" v-model="category">
+                  <option value="">No category</option>
+                  <option v-for="item in NOTE_CATEGORIES" :key="item" :value="item">
+                    {{ item }}
+                  </option>
+                </select>
+              </div>
+
               <div class="content-heading">
                 <div class="field-heading">
                   <label for="content">Content</label>
@@ -283,9 +316,10 @@ onMounted(() => {
                 id="content"
                 v-model="content"
                 :maxlength="10000"
+                @character-count="contentCharacterCount = $event"
               />
               <p class="editor-hint">Formatting is saved with your note.</p>
-              <div class="character-count character-count--content">{{ content.length }} / 10,000</div>
+              <div class="character-count character-count--content">{{ contentCharacterCount }} / 10,000</div>
 
               <div class="form-actions">
                 <button class="cancel-button" type="button" @click="goBack">Cancel</button>
@@ -440,6 +474,9 @@ onMounted(() => {
 .title-input input { width: 100%; padding: 11px 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 11px; }
 .title-input input::placeholder { color: #8c9bb1; }
 .character-count { margin-top: 5px; color: #8b9ab1; font-size: 9px; text-align: right; }
+.category-field { margin-top: 15px; }
+.category-field select { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 11px; }
+.category-field select:focus { border-color: #75a2ff; outline: 0; box-shadow: 0 0 0 3px #3478f51b; }
 .content-heading { margin-top: 17px; }
 .content-heading .field-heading { margin-bottom: 8px; }
 .editor-hint { margin: 6px 0 0; color: var(--muted); font-size: 9px; }

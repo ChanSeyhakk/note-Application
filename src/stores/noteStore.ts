@@ -7,6 +7,7 @@ export interface Note {
   userId: number
   title: string
   content: string | null
+  category?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -37,4 +38,3 @@ export const useNoteStore = defineStore('note', {
     }
   }
 })
-
