@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import MarkdownEditor from "../components/MarkdownEditor.vue";
 import api from "../services/api";
+import { renderMarkdown } from "../utils/markdown";
 
 const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
 
@@ -28,9 +30,7 @@ const isDark = ref(false);
 const userName = ref("there");
 
 const previewTitle = computed(() => title.value.trim() || "Note Title");
-const previewContent = computed(
-  () => content.value.trim() || "Your note content will appear here...",
-);
+const previewContentHtml = computed(() => renderMarkdown(content.value));
 
 const formatDate = (date?: string) => {
   if (!date) return "Not available";
@@ -279,30 +279,12 @@ onMounted(() => {
                   <span>Optional</span>
                 </div>
               </div>
-              <div class="editor">
-                <div class="editor__toolbar" aria-label="Plain text editor">
-                  <span class="toolbar-letter toolbar-letter--bold">B</span>
-                  <span class="toolbar-letter toolbar-letter--italic">I</span>
-                  <span class="toolbar-letter toolbar-letter--underline">U</span>
-                  <span class="toolbar-divider"></span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>
-                  <span class="toolbar-divider"></span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1" /></svg>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14" /></svg>
-                  <span class="toolbar-spacer"></span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4m12 12v4h-4M5 19l5-5m9-9-5 5" /></svg>
-                </div>
-                <div class="editor__input-wrap">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-.8L19 8a2.8 2.8 0 0 0-4-4L4 15z" /></svg>
-                  <textarea
-                    id="content"
-                    v-model="content"
-                    maxlength="10000"
-                    placeholder="Write your thoughts, ideas, or plans here..."
-                  ></textarea>
-                </div>
-              </div>
+              <MarkdownEditor
+                id="content"
+                v-model="content"
+                :maxlength="10000"
+              />
+              <p class="editor-hint">Formatting is saved with your note.</p>
               <div class="character-count character-count--content">{{ content.length }} / 10,000</div>
 
               <div class="form-actions">
@@ -359,8 +341,14 @@ onMounted(() => {
               </header>
               <article class="preview-note">
                 <h2>{{ previewTitle }}</h2>
-                <p>{{ previewContent }}</p>
-                <div v-if="!content.trim()" class="preview-skeleton"><i></i><i></i></div>
+                <div
+                  v-if="content.trim()"
+                  class="preview-note__content"
+                  v-html="previewContentHtml"
+                ></div>
+                <div v-else class="preview-empty">
+                  Your formatted note will appear here.
+                </div>
               </article>
             </section>
           </aside>
@@ -454,19 +442,7 @@ onMounted(() => {
 .character-count { margin-top: 5px; color: #8b9ab1; font-size: 9px; text-align: right; }
 .content-heading { margin-top: 17px; }
 .content-heading .field-heading { margin-bottom: 8px; }
-.editor { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
-.editor__toolbar { display: flex; align-items: center; gap: 14px; min-height: 37px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--surface); color: #536a8c; }
-.toolbar-letter { font-family: Georgia, serif; font-size: 13px; font-weight: 700; }
-.toolbar-letter--italic { font-style: italic; }
-.toolbar-letter--underline { text-decoration: underline; }
-.toolbar-divider { width: 1px; height: 17px; background: var(--line); }
-.editor__toolbar svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.toolbar-spacer { flex: 1; }
-.editor__input-wrap { position: relative; min-height: 220px; }
-.editor__input-wrap > svg { position: absolute; top: 13px; left: 13px; width: 16px; height: 16px; fill: none; stroke: #50698d; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.editor__input-wrap textarea { display: block; width: 100%; min-height: 220px; resize: vertical; padding: 11px 14px 14px 18px; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 11px; line-height: 1.65; }
-.editor__input-wrap textarea::placeholder { color: #8c9bb1; }
-.editor__input-wrap > svg { display: none; }
+.editor-hint { margin: 6px 0 0; color: var(--muted); font-size: 9px; }
 .character-count--content { margin-top: 6px; }
 .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 19px; padding-top: 15px; border-top: 1px solid var(--line); }
 .cancel-button, .save-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 39px; border-radius: 8px; cursor: pointer; font: inherit; font-size: 11px; font-weight: 650; }
@@ -501,10 +477,13 @@ onMounted(() => {
 .preview-card { padding: 14px; }
 .preview-note { overflow: hidden; margin-top: 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); }
 .preview-note h2 { overflow: hidden; margin: 0; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.preview-note p { display: -webkit-box; overflow: hidden; min-height: 40px; margin: 0; padding: 9px 12px 4px; color: #70819d; font-size: 9px; line-height: 1.55; white-space: pre-wrap; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-.preview-skeleton { display: grid; gap: 5px; padding: 0 12px 10px; }
-.preview-skeleton i { display: block; width: 82%; height: 5px; border-radius: 5px; background: var(--line); }
-.preview-skeleton i:last-child { width: 59%; }
+.preview-note__content { max-height: 92px; overflow: hidden; padding: 9px 12px 10px; color: #70819d; font-size: 9px; line-height: 1.55; overflow-wrap: anywhere; }
+.preview-note__content :deep(p) { margin: 0 0 5px; }
+.preview-note__content :deep(ul), .preview-note__content :deep(ol) { margin: 0; padding-left: 15px; }
+.preview-note__content :deep(pre), .preview-note__content :deep(code) { border-radius: 4px; background: var(--line); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.preview-note__content :deep(pre) { overflow: hidden; padding: 5px; }
+.preview-note__content :deep(a) { color: #2864e8; text-decoration: underline; }
+.preview-empty { min-height: 40px; padding: 9px 12px 4px; color: #98a6ba; font-size: 9px; }
 .state-card { display: grid; justify-items: center; gap: 8px; min-height: 240px; align-content: center; padding: 25px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-align: center; box-shadow: 0 4px 15px #25395809; }
 .state-card > strong { color: var(--ink); font-size: 14px; }
 .state-card > p { margin: 0; color: var(--muted); font-size: 11px; }
@@ -520,7 +499,6 @@ onMounted(() => {
   .sidebar { flex-basis: 190px; }
   .editor-layout { grid-template-columns: minmax(0, 1.5fr) minmax(220px, .9fr); }
   .editor-card { padding: 15px; }
-  .editor__toolbar { gap: 10px; }
   .heading-art { right: -25px; opacity: .6; }
 }
 @media (max-width: 760px) {
@@ -554,8 +532,6 @@ onMounted(() => {
   .heading-art { right: -82px; opacity: .3; }
   .editor-layout { grid-template-columns: 1fr; gap: 11px; }
   .editor-card { padding: 14px; }
-  .editor__toolbar { gap: 13px; }
-  .editor__input-wrap, .editor__input-wrap textarea { min-height: 190px; }
   .helper-column { grid-template-columns: 1fr; }
   .helper-card { padding: 13px; }
   .tips-list { grid-template-columns: 1fr 1fr; gap: 9px; }
@@ -566,7 +542,6 @@ onMounted(() => {
   .page-heading h1 { font-size: 18px; }
   .page-heading p { max-width: 190px; font-size: 8px; }
   .editor-card { padding: 11px; }
-  .editor__toolbar { gap: 10px; padding: 0 8px; }
   .form-actions { gap: 8px; }
   .cancel-button { min-width: 84px; }
   .save-button { min-width: 0; flex: 1; }

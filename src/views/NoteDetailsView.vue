@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../services/api";
+import { renderMarkdown } from "../utils/markdown";
 
 const logoUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}noteme-logo.png`;
 
@@ -228,7 +229,11 @@ onMounted(() => {
 
           <article class="note-card">
             <div class="note-content">
-              <p v-if="note.content" class="note-content__text">{{ note.content }}</p>
+              <div
+                v-if="note.content"
+                class="note-content__text"
+                v-html="renderMarkdown(note.content)"
+              ></div>
               <div v-else class="empty-content">
                 <span class="empty-content__icon">✎</span>
                 <strong>This note is ready for your ideas</strong>
@@ -343,7 +348,16 @@ onMounted(() => {
 .note-heading p { margin: 0; color: var(--muted); font-size: 10px; }
 .note-card { overflow: hidden; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); box-shadow: 0 5px 20px #2539580b; }
 .note-content { min-height: 250px; padding: clamp(20px, 3vw, 34px); }
-.note-content__text { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-content__text { color: var(--ink); font-size: 13px; line-height: 1.85; overflow-wrap: anywhere; }
+.note-content__text :deep(p) { margin: 0 0 12px; }
+.note-content__text :deep(p:last-child) { margin-bottom: 0; }
+.note-content__text :deep(ul), .note-content__text :deep(ol) { margin: 0 0 12px; padding-left: 24px; }
+.note-content__text :deep(li + li) { margin-top: 4px; }
+.note-content__text :deep(a) { color: var(--blue); text-decoration: underline; overflow-wrap: anywhere; }
+.note-content__text :deep(code), .note-content__text :deep(pre) { border-radius: 6px; background: var(--surface-soft); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.note-content__text :deep(code) { padding: 2px 5px; }
+.note-content__text :deep(pre) { overflow-x: auto; margin: 12px 0; padding: 13px; border: 1px solid var(--line); }
+.note-content__text :deep(pre code) { padding: 0; background: transparent; }
 .empty-content { display: grid; min-height: 190px; place-content: center; justify-items: center; text-align: center; }
 .empty-content__icon { display: grid; width: 40px; height: 40px; place-items: center; margin-bottom: 12px; border-radius: 12px; background: #eaf1ff; color: #2864e8; font-size: 23px; }
 .empty-content strong { color: var(--ink); font-size: 13px; }
