@@ -242,7 +242,7 @@ onMounted(() => {
         <section class="welcome-banner">
           <div class="welcome-banner__copy">
             <span class="eyebrow">YOUR SPACE, YOUR THOUGHTS</span>
-            <h1>Good to see you, {{ userName }} <span class="wave">✋</span></h1>
+            <h1>Good to see you, {{ userName }}</h1>
             <p>Capture your thoughts, ideas, and everything that matters.</p>
           </div>
           <div class="welcome-art" aria-hidden="true">
@@ -521,7 +521,6 @@ onMounted(() => {
 .welcome-banner h1 { margin: 7px 0 5px; color: #1a2b47; font-size: clamp(19px, 2vw, 25px); font-weight: 760; letter-spacing: -.8px; }
 .dashboard--dark .welcome-banner h1 { color: #f1f5ff; }
 .welcome-banner p { margin: 0; color: #71819b; font-size: 11px; }
-.wave { display: inline-block; font-size: .85em; }
 .welcome-art { position: absolute; right: 25%; bottom: 0; width: 165px; height: 119px; }
 .welcome-art__paper { position: absolute; bottom: 10px; width: 64px; height: 88px; border-radius: 10px 10px 3px 3px; box-shadow: 0 8px 19px #4671bb30; }
 .welcome-art__paper--back { left: 24px; background: #5388fa; transform: rotate(-16deg); }
